@@ -1,0 +1,23 @@
+{
+  "greetingPhrases": [
+    "How are you, {{NAME}}?",
+    "How are ya, {{NAME}}?",
+    "How are things, {{NAME}}?",
+    "How are things going, {{NAME}}?",
+    "How's it going, {{NAME}}?",
+    "What's going on, {{NAME}}?",
+    "How's everyone, {{NAME}}?",
+    "How's everyone doing, {{NAME}}?",
+    "What's up, {{NAME}}?",
+    "Whazzup, {{NAME}}?",
+    "Sup, {{NAME}}?",
+    "What's happening, {{NAME}}?",
+    "What are you up to these days, {{NAME}}?",
+    "What's new, {{NAME}}?",
+    "What's shaking, {{NAME}}?",
+    "What's shakin', {{NAME}}?",
+    "How are you holding up, {{NAME}}?",
+    "Doing OK, {{NAME}}?",
+    "Everything OK, {{NAME}}?"
+  ]
+}

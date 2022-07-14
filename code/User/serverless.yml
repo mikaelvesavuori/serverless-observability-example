@@ -1,0 +1,80 @@
+service: serverless-observability-demo-user
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: ${opt:stage, 'shared'}
+  region: ${opt:region, 'eu-north-1'}
+  memorySize: ${opt:memory, 1024}
+  timeout: 10
+  logRetentionInDays: 7
+  versionFunctions: false
+  deploymentBucket:
+    blockPublicAccess: true
+    maxPreviousDeploymentArtifacts: 5
+    serverSideEncryption: AES256
+  stackTags:
+    Usage: ${self:service}
+  tags:
+    Usage: ${self:service}
+  apiGateway:
+    minimumCompressionSize: 1024
+  tracing:
+    apiGateway: true
+    lambda: true
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - xray:PutTelemetryRecords
+            - xray:PutTraceSegments
+          Resource:
+            - "*"
+  environment:
+    LIBHONEY_DATASET: something # TODO set this to your value
+    LIBHONEY_API_KEY: something  # TODO set this to your value
+    LOGS_API_DISABLE_PLATFORM_MSGS: true
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - serverless-iam-roles-per-function
+
+package:
+  individually: true
+  patterns:
+    - node_modules/aws-sdk/**
+    - node_modules/aws-lambda/**
+
+custom:
+  aws:
+    customEventbridgeBusName: observabilitydemo
+  webpack:
+    webpackConfig: 'webpack.config.js'
+    includeModules: true
+    packager: 'npm'
+    excludeFiles: ./**/*.test.ts
+
+functions:
+  GetUserName:
+    handler: src/infrastructure/adapters/web/GetUserName.handler
+    description: Get the user name for a user ID
+    events:
+      - http:
+          method: POST
+          path: /getUserName
+
+  LogGreetedUser:
+    handler: src/infrastructure/adapters/web/LogGreetedUser.handler
+    description: Log the name of a greeted user
+    events:
+      - eventBridge:
+          eventBus: ${self:custom.aws.customEventbridgeBusName}
+          pattern:
+            source:
+              - observabilitydemo.greet
+            detail-type:
+              - Greet
+
+

@@ -1,0 +1,25 @@
+{
+  "name": "serverless-observability-demo",
+  "version": "1.0.0",
+  "description": "This repo presents a complete project to demonstrate a 'broken' observable serverless application.",
+  "main": "index.js",
+  "author": "Mikael Vesavuori",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikaelvesavuori/serverless-observability-demo.git"
+  },
+  "keywords": [
+    "serverless",
+    "observability",
+    "example",
+    "demo",
+    "aws",
+    "honeycomb",
+    "honeycombio"
+  ],
+  "bugs": {
+    "url": "https://github.com/mikaelvesavuori/serverless-observability-demo/issues"
+  },
+  "homepage": "https://github.com/mikaelvesavuori/serverless-observability-demo#readme"
+}

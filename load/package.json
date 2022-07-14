@@ -1,0 +1,13 @@
+{
+  "name": "serverless-observability-demo-load",
+  "version": "1.0.0",
+  "description": "Load tester for serverless-observability-demo",
+  "main": "test.js",
+  "scripts": {
+    "install:k6": "brew install k6",
+    "test": "k6 run test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

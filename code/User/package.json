@@ -1,0 +1,37 @@
+{
+  "name": "serverless-observability-demo-user",
+  "version": "1.0.0",
+  "description": "Observability demo, User service",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx sls offline",
+    "deploy": "npx sls deploy"
+  },
+  "keywords": [],
+  "author": "Mikael Vesavuori",
+  "license": "MIT",
+  "dependencies": {
+    "mikrolog": "1",
+    "uuid": "8"
+  },
+  "devDependencies": {
+    "@ava/typescript": "3",
+    "@types/aws-lambda": "8",
+    "@types/node": "latest",
+    "@typescript-eslint/eslint-plugin": "5",
+    "@typescript-eslint/parser": "5",
+    "eslint": "8",
+    "eslint-config-prettier": "8",
+    "eslint-plugin-prettier": "4",
+    "prettier": "2",
+    "serverless": "3",
+    "serverless-iam-roles-per-function": "3",
+    "serverless-offline": "8",
+    "serverless-webpack": "5",
+    "ts-loader": "latest",
+    "ts-node": "10",
+    "tslib": "latest",
+    "webpack": "5",
+    "webpack-cli": "latest"
+  }
+}
