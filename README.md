@@ -76,4 +76,4 @@ Then, you will need to modify the load testing script (`test.js`), ensuring the 
 
 ### 7. Check and observe!
 
-Honeycomb will gets logs streamed continuously from AWS. You should be able to see logs both in AWS CloudWatch as well as in Honeycomb now.
+Honeycomb will get logs streamed continuously from AWS. You should be able to see logs both in AWS CloudWatch as well as in Honeycomb now.
