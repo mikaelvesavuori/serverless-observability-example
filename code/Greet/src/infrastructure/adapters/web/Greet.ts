@@ -42,7 +42,7 @@ export async function handler(
   awsContext: Context
 ): Promise<APIGatewayProxyResult> {
   const logger = MikroLog.start({ event, context: awsContext }); // MikroLog will also make certain AWS context available in the environment; see below with correlation ID
-  const tracer = new MikroTrace({
+  const tracer = MikroTrace.start({
     serviceName: metadataConfig?.service,
     correlationId: getCorrelationId()
   });
@@ -63,11 +63,11 @@ export async function handler(
     logger.log('Attempting to fulfill request...');
 
     randomlyInjectError();
-    const user = await getUser(GET_USER_NAME_SERVICE_URL, id, tracer);
-    const phrase = await getGreetingPhrase(GREETING_PHRASES_SERVICE_URL, tracer);
+    const user = await getUser(GET_USER_NAME_SERVICE_URL, id);
+    const phrase = await getGreetingPhrase(GREETING_PHRASES_SERVICE_URL);
     const message = phrase ? phrase.replace('{{NAME}}', user) : '';
 
-    await emitEvent(message, tracer);
+    await emitEvent(message);
 
     span.end();
 
@@ -119,7 +119,8 @@ function randomlyInjectError() {
 /**
  * @description Call `User` service (`GetUserName`) and get response.
  */
-async function getUser(url: string, id: string, tracer: MikroTrace) {
+async function getUser(url: string, id: string) {
+  const tracer = MikroTrace.start();
   const span = tracer.start(spanNames['userSpan']);
 
   const { spanId, traceId } = span.getConfiguration();
@@ -144,7 +145,8 @@ async function getUser(url: string, id: string, tracer: MikroTrace) {
 /**
  * @description Call `GreetingPhrase` service and get response.
  */
-async function getGreetingPhrase(url: string, tracer: MikroTrace) {
+async function getGreetingPhrase(url: string) {
+  const tracer = MikroTrace.start();
   const span = tracer.start(spanNames['apiSpan']);
   const greetingPhraseResponse = await fetch(url).then((res: any) => {
     if (res.status >= 200 && res.status < 300) return res.json();
@@ -165,7 +167,8 @@ async function getGreetingPhrase(url: string, tracer: MikroTrace) {
 /**
  * @description Emit an event using AWS EventBridge.
  */
-async function emitEvent(message: string, tracer: MikroTrace) {
+async function emitEvent(message: string) {
+  const tracer = MikroTrace.start();
   const span = tracer.start(spanNames['emitSpan']);
   const metadata = produceDynamicMetadata();
   const { spanId, traceId } = span.getConfiguration();

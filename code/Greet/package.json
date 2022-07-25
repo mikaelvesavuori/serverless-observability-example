@@ -15,7 +15,7 @@
     "@aws-sdk/client-xray": "3",
     "aws-xray-sdk": "3",
     "mikrolog": "2",
-    "mikrotrace": "^1.1.0",
+    "mikrotrace": "2",
     "node-fetch": "2"
   },
   "devDependencies": {
