@@ -11,7 +11,7 @@ export async function handler(
   context: any
 ): Promise<APIGatewayProxyResult> {
   try {
-    const logger = new MikroLog({ metadataConfig, event, context });
+    const logger = MikroLog.start({ metadataConfig, event, context });
     logger.log('Logging greeted user...');
 
     randomlyInjectError();

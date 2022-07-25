@@ -11,7 +11,7 @@
   "author": "Mikael Vesavuori",
   "license": "MIT",
   "dependencies": {
-    "mikrolog": "1",
+    "mikrolog": "2",
     "uuid": "8"
   },
   "devDependencies": {

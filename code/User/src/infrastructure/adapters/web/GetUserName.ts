@@ -20,7 +20,7 @@ export async function handler(
 ): Promise<APIGatewayProxyResult> {
   try {
     // START SETUP //
-    const logger = new MikroLog({ metadataConfig, event, context });
+    const logger = MikroLog.start({ metadataConfig, event, context });
     logger.log('Getting user name...');
 
     const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;

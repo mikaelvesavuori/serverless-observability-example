@@ -10,7 +10,7 @@ export class GetUserNameError extends Error {
     const message = `Unable to find user with ID '${id}'!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -25,7 +25,7 @@ export class MissingRequestBodyError extends Error {
     const message = `Missing request body!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -40,7 +40,7 @@ export class MissingIdError extends Error {
     const message = `Missing ID!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
