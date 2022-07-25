@@ -14,8 +14,8 @@
     "@aws-sdk/client-eventbridge": "3",
     "@aws-sdk/client-xray": "3",
     "aws-xray-sdk": "3",
-    "mikrolog": "1",
-    "mikrotrace": "1",
+    "mikrolog": "2",
+    "mikrotrace": "^1.1.0",
     "node-fetch": "2"
   },
   "devDependencies": {

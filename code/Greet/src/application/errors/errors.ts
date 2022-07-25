@@ -10,7 +10,7 @@ export class GreetingPhraseError extends Error {
     const message = `Unable to get a greeting phrase with the random number '${randomNumber}'!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -25,7 +25,7 @@ export class MissingRequestBodyError extends Error {
     const message = `Missing request body!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -40,7 +40,7 @@ export class MissingIdError extends Error {
     const message = `Missing ID!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -55,7 +55,7 @@ export class FailureToEmitEventError extends Error {
     const message = `Failed to emit event!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -70,7 +70,7 @@ export class MissingEnvVarsError extends Error {
     const message = `Missing required environment variables!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -85,7 +85,7 @@ export class NetworkUserError extends Error {
     const message = `Did not receive a 200-class status from the user service!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }
@@ -100,7 +100,7 @@ export class NetworkGreetingError extends Error {
     const message = `Did not receive a 200-class status from the greeting service!`;
     this.message = message;
 
-    const logger = new MikroLog();
+    const logger = MikroLog.start();
     logger.error(message);
   }
 }

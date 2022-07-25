@@ -41,7 +41,7 @@ export async function handler(
   event: APIGatewayProxyEvent,
   awsContext: Context
 ): Promise<APIGatewayProxyResult> {
-  const logger = new MikroLog({ event, context: awsContext }); // MikroLog will also make certain AWS context available in the environment; see below with correlation ID
+  const logger = MikroLog.start({ event, context: awsContext }); // MikroLog will also make certain AWS context available in the environment; see below with correlation ID
   const tracer = new MikroTrace({
     serviceName: metadataConfig?.service,
     correlationId: getCorrelationId()
@@ -83,7 +83,7 @@ export async function handler(
      * our tools.
      */
     if (error.name === 'Error') {
-      const logger = new MikroLog({ event, context: awsContext });
+      const logger = MikroLog.start({ event, context: awsContext });
       logger.error(error.message);
     }
 
