@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 import { MikroLog } from 'mikrolog';
 import { MikroTrace } from 'mikrotrace';
 
-import { produceDynamicMetadata, getCorrelationId } from '../../utils/metadataUtils'
+import { produceDynamicMetadata, produceCorrelationId, getCorrelationId } from '../../utils/metadataUtils'
 
 import { metadataConfig } from '../../../config/metadata';
 
@@ -41,6 +41,8 @@ export async function handler(
   event: APIGatewayProxyEvent,
   awsContext: Context
 ): Promise<APIGatewayProxyResult> {
+  process.env.__CORRELATIONID__ = produceCorrelationId(event, awsContext);
+
   const logger = MikroLog.start({ event, context: awsContext }); // MikroLog will also make certain AWS context available in the environment; see below with correlation ID
   const tracer = MikroTrace.start({
     serviceName: metadataConfig?.service,

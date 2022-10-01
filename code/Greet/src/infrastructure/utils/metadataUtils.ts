@@ -38,3 +38,21 @@ export function produceDynamicMetadata(): Record<string, any> {
  * Utility to get correlation ID from environment.
  */
 export const getCorrelationId = () => process.env.__CORRELATIONID__ || '';
+
+/**
+ * Utility to set correlation ID in environment.
+ */
+export function produceCorrelationId(event: any, context: any): string {
+  // Check first if this is 1) via event, 2) via header (API), or 3) set new one from AWS request ID, else set as empty
+  if (
+    event &&
+    event['detail'] &&
+    event['detail']['metadata'] &&
+    event['detail']['metadata']['correlationId']
+  )
+    return event['detail']['metadata']['correlationId'];
+  else if (event && event['headers'] && event['headers']['x-correlation-id'])
+    return event['headers']['x-correlation-id'];
+  else if (context && context['awsRequestId']) return context['awsRequestId'];
+  return '';
+}
