@@ -2,12 +2,13 @@ service: serverless-observability-demo-user
 
 provider:
   name: aws
-  runtime: nodejs16.x
-  stage: ${opt:stage, 'shared'}
+  runtime: nodejs18.x
+  architecture: x86_64 # This is because Honeycomb is only available in eu-north-1 with this architecture
+  stage: ${opt:stage, 'prod'}
   region: ${opt:region, 'eu-north-1'}
   memorySize: ${opt:memory, 1024}
   timeout: 10
-  logRetentionInDays: 7
+  logRetentionInDays: 1
   versionFunctions: false
   deploymentBucket:
     blockPublicAccess: true
@@ -19,62 +20,149 @@ provider:
     Usage: ${self:service}
   apiGateway:
     minimumCompressionSize: 1024
-  tracing:
-    apiGateway: true
-    lambda: true
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - xray:PutTelemetryRecords
-            - xray:PutTraceSegments
-          Resource:
-            - "*"
   environment:
-    LIBHONEY_DATASET: something # TODO set this to your value
-    LIBHONEY_API_KEY: something  # TODO set this to your value
+    # Honeycomb - can be removed if not using it
+    LIBHONEY_DATASET: ${self:custom.honeycomb.dataset}
+    LIBHONEY_API_KEY: ${self:custom.honeycomb.apiKey}
     LOGS_API_DISABLE_PLATFORM_MSGS: true
 
 plugins:
-  - serverless-webpack
+  - serverless-plugin-datadog # Can be removed if not using Datadog
+  - serverless-esbuild
   - serverless-offline
   - serverless-iam-roles-per-function
+  - serverless-plugin-aws-alerts # Only relevant if you want to use alarms
 
 package:
   individually: true
-  patterns:
-    - node_modules/aws-sdk/**
-    - node_modules/aws-lambda/**
 
 custom:
-  aws:
-    customEventbridgeBusName: observabilitydemo
-  webpack:
-    webpackConfig: 'webpack.config.js'
-    includeModules: true
-    packager: 'npm'
-    excludeFiles: ./**/*.test.ts
+  config:
+    # REQUIRED to be set to your values
+    honeycombApiKey: your-key-here # Only relevant if using Honeycomb
+    datadogApiKey: your-key-here # Only relevant if using Datadog
+    datadogTeam: your-team # Only relevant if using Datadog
+    alarmsEmail: your-email@somedomain.xyz # Only relevant if you want to use alarms
+    # OPTIONAL
+    honeycombDatasetName: Test
+    datadogSite: datadoghq.eu
+    eventBusName: observabilitydemo # Event bus name must match exactly the same name in the Greet service
+  esbuild:
+    bundle: true
+    minify: true
+    exclude: ["dd-trace", "datadog-lambda-js", "aws-sdk"]
+  datadog:
+    site: ${self:custom.config.datadogSite}
+    apiKey: ${self:custom.config.datadogApiKey}
+    addLayers: true
+    env: ${self:provider.stage}
+    service: ${self:service}
+    version: v1.0.0
+    tags: "team:${self:custom.config.datadogTeam},project:${self:service}"
+  honeycomb:
+    dataset: ${self:custom.config.honeycombDatasetName}
+    apiKey: ${self:custom.config.honeycombApiKey}
+  alerts:
+    dashboards: false
+    stages:
+      - prod
+    topics:
+      alarm:
+        topic: ${self:service}-${self:provider.stage}-alerts-alarm
+        notifications:
+          - protocol: email
+            endpoint: ${self:custom.config.alarmsEmail}
+    definitions:
+      authErrors:
+        metric: authErrors
+        threshold: 10
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: '{$.error IS TRUE}'
+        treatMissingData: notBreaching
+      clientErrors:
+        metric: clientErrors
+        threshold: 10
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: '{$.httpStatusCode >= 400 && $.httpStatusCode < 500}'
+        treatMissingData: notBreaching
+      integrationErrors:
+        metric: integrationErrors
+        threshold: 1
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: '{$.error IS TRUE && $.message = "Did not receive a 200-class status*"}'
+        treatMissingData: notBreaching
+      latencyErrors:
+        namespace: 'AWS/Lambda'
+        metric: Duration
+        threshold: 2000
+        statistic: Maximum
+        period: 300
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        treatMissingData: notBreaching
+      serverErrors:
+        metric: serverErrors
+        threshold: 1
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: '{$.httpStatusCode >= 500 && $.httpStatusCode < 600}'
+        treatMissingData: notBreaching
+      timeoutErrors:
+        metric: timeoutErrors
+        threshold: 1
+        statistic: Sum
+        period: 60
+        evaluationPeriods: 1
+        datapointsToAlarm: 1
+        comparisonOperator: GreaterThanOrEqualToThreshold
+        pattern: '{$.error IS TRUE && $.message = "Task timed out"}'
+        treatMissingData: notBreaching
 
 functions:
   GetUserName:
     handler: src/infrastructure/adapters/web/GetUserName.handler
     description: Get the user name for a user ID
     events:
-      - http:
+      - httpApi:
           method: POST
           path: /getUserName
+    alarms:
+      - clientErrors
+      - integrationErrors
+      - latencyErrors
+      - serverErrors
+      - timeoutErrors
 
   LogGreetedUser:
     handler: src/infrastructure/adapters/web/LogGreetedUser.handler
     description: Log the name of a greeted user
     events:
       - eventBridge:
-          eventBus: ${self:custom.aws.customEventbridgeBusName}
+          eventBus: ${self:custom.config.eventBusName}
           pattern:
             source:
               - observabilitydemo.greet
             detail-type:
               - Greet
-
-
+    alarms:
+      - clientErrors
+      - integrationErrors
+      - latencyErrors
+      - serverErrors
+      - timeoutErrors

@@ -2,3 +2,5 @@
 node_modules/
 .serverless/
 .webpack/
+lib/
+serverless.custom.yml

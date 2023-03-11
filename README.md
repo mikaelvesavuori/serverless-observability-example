@@ -1,8 +1,10 @@
-# Serverless Observability example: AWS and Honeycomb
+# Serverless Observability example: AWS and Honeycomb or Datadog
 
 **This repo presents a complete project to demonstrate a "broken" observable serverless application.**
 
 This project is built using Typescript and runs on API Gateway and Lambda. It is composed of two separate backend services ("internal") and one mock server on Mockachino ("external") that serves a subset of the content.
+
+Additionally, there is a set of AWS CloudWatch alerts included to demonstrate such usage.
 
 ## Diagram
 
@@ -20,6 +22,12 @@ It is assumed that:
 - You are logged into AWS through your environment
 
 ## Deployment
+
+_Version 2.0 introduced support for Datadog. It won't quite be as a rich an experience as using Honeycomb but it will definitely be servicable._
+
+The instructions below relate broadly to either tool. When it comes to getting API keys as such, please refer to [Datadog's own instructions](https://docs.datadoghq.com/account_management/api-app-keys/).
+
+Make sure to check the respective `serverless.yml` files for the services and remove anything you don't want to use.
 
 ### 1. Get a free Honeycomb account and API key
 
@@ -62,18 +70,14 @@ Also edit the following fields to the values you've saved from before:
 
 Install the dependencies with `npm install` or `yarn install`, then deploy the service with `npm run deploy` (or `yarn run deploy`).
 
-### 5. Add the Honeycomb Lambda extension to your functions
+### 5. Run a bit of test traffic to create logs and traces
 
-From the root of the project, run the Honeycomb script with `sh tooling/honeycomb.sh`, but do update any function names or values first in case you made any changes.
-
-### 6. Run a bit of test traffic to create logs and traces
-
-You can either do a crude manual call like `curl -X POST -d '{"id":1}' https://RANDOM.execute-api.REGION.amazonaws.com/shared/greet` or use [k6](https://k6.io/).
+You can either do a crude manual call like `curl -X POST -d '{"id":1}' https://RANDOM.execute-api.REGION.amazonaws.com/greet` or use [k6](https://k6.io/).
 
 To use `k6` you will first need to install it. Go to the `load` folder and run `npm run install:k6` which will use [homebrew](https://brew.sh) to install `k6`.
 
 Then, you will need to modify the load testing script (`test.js`), ensuring the endpoint is updated to your own `greet` endpoint. Now you should be able to run it with `npm test`. Feel free to modify the settings as you please.
 
-### 7. Check and observe!
+### 6. Check and observe!
 
 Honeycomb will get logs streamed continuously from AWS. You should be able to see logs both in AWS CloudWatch as well as in Honeycomb now.

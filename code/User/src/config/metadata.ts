@@ -7,9 +7,9 @@ export const metadataConfig: Record<string, any> = {
   owner: 'MyCompany',
   hostPlatform: 'aws',
   domain: 'UserManagement',
-  system: 'User',
-  service: 'User',
+  system: 'UserStore',
+  //service: 'User',
   team: 'ThatOtherTeam',
-  tags: [''],
+  tags: ['backend', 'typescript'],
   dataSensitivity: 'sensitive'
 };

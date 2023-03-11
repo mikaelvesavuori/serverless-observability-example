@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, Context, APIGatewayProxyResult } from 'aws-lambda';
+import { Context, APIGatewayProxyResult, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { MikroLog } from 'mikrolog';
 
 import { metadataConfig } from '../../../config/metadata';
@@ -15,11 +15,13 @@ import {
  * It is called from the `Greet` service.
  */
 export async function handler(
-  event: APIGatewayProxyEvent,
+  event: APIGatewayProxyEventV2,
   context: Context
 ): Promise<APIGatewayProxyResult> {
   try {
+    /////////////////
     // START SETUP //
+    /////////////////
     const logger = MikroLog.start({ metadataConfig, event, context });
     logger.log('Getting user name...');
 
@@ -28,7 +30,9 @@ export async function handler(
 
     const id = body.id;
     if (!id) throw new MissingIdError();
+    ///////////////
     // END SETUP //
+    ///////////////
 
     randomlyInjectError();
 

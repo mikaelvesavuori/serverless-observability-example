@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { EventBridgeEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { MikroLog } from 'mikrolog';
 
 import { metadataConfig } from '../../../config/metadata';
@@ -7,12 +7,18 @@ import { metadataConfig } from '../../../config/metadata';
  * @description `LogGreetedUser` simply logs the user who made a request in the `User` context/service.
  */
 export async function handler(
-  event: APIGatewayProxyEvent,
-  context: any
+  event: EventBridgeEvent<any, any>,
+  context: Context
 ): Promise<APIGatewayProxyResult> {
   try {
+    /////////////////
+    // START SETUP //
+    /////////////////
     const logger = MikroLog.start({ metadataConfig, event, context });
     logger.log('Logging greeted user...');
+    ///////////////
+    // END SETUP //
+    ///////////////
 
     randomlyInjectError();
 

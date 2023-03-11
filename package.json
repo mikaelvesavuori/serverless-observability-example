@@ -1,6 +1,6 @@
 {
   "name": "serverless-observability-demo",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "This repo presents a complete project to demonstrate a 'broken' observable serverless application.",
   "main": "index.js",
   "author": "Mikael Vesavuori",

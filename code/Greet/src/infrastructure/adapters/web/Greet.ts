@@ -1,106 +1,27 @@
-import { APIGatewayProxyEvent, Context, APIGatewayProxyResult } from 'aws-lambda';
-import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
-import fetch from 'node-fetch';
+import { Context, APIGatewayProxyResult, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { MikroLog } from 'mikrolog';
 import { MikroTrace } from 'mikrotrace';
 
-import { produceDynamicMetadata, produceCorrelationId, getCorrelationId } from '../../utils/metadataUtils'
+import { getUser } from '../../network/getUser';
+import { getGreetingPhrase } from '../../network/getGreetingPhrases';
+import { emitEvent } from '../../network/emitEvent';
+
+import { produceCorrelationId, getCorrelationId } from '../../utils/metadataUtils';
+import { randomlyInjectError } from '../../utils/randomlyInjectError';
 
 import { metadataConfig } from '../../../config/metadata';
+import { spanNames } from '../../../config/spanNames';
 
 import {
   MissingRequestBodyError,
   MissingIdError,
-  GreetingPhraseError,
-  FailureToEmitEventError,
-  MissingEnvVarsError,
-  NetworkUserError,
-  NetworkGreetingError
+  MissingEnvVarsError
 } from '../../../application/errors/errors';
 
 const REGION = process.env.REGION || '';
 const GET_USER_NAME_SERVICE_URL = process.env.GET_USER_NAME_SERVICE_URL || '';
 const GREETING_PHRASES_SERVICE_URL = process.env.GREETING_PHRASES_SERVICE_URL || '';
 const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME || '';
-
-const spanNames = {
-  fullSpan: 'Greet a user',
-  userSpan: 'Call the User service and fetch a response',
-  apiSpan: 'Call the GreetingPhrase service and fetch a response',
-  emitSpan: 'Emitting the "Greet" event using AWS EventBridge'
-};
-
-/**
- * @description The `Greet` function is the entry point for the service.
- *
- * It integrates with another out-of-context AWS service (`User`) and with
- * an external service (`GreetingPhrase`) hosted on Mockachino
- * (`https://www.mockachino.com`).
- */
-export async function handler(
-  event: APIGatewayProxyEvent,
-  awsContext: Context
-): Promise<APIGatewayProxyResult> {
-  process.env.__CORRELATIONID__ = produceCorrelationId(event, awsContext);
-
-  const logger = MikroLog.start({ event, context: awsContext }); // MikroLog will also make certain AWS context available in the environment; see below with correlation ID
-  const tracer = MikroTrace.start({
-    serviceName: metadataConfig?.service,
-    correlationId: getCorrelationId()
-  });
-
-  try {
-    // START SETUP //
-    checkRequiredEnvVars();
-
-    const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
-    if (!body || JSON.stringify(body) === '{}') throw new MissingRequestBodyError();
-
-    const id = body.id;
-    if (!id) throw new MissingIdError();
-    // END SETUP //
-
-    const span = tracer.start(spanNames['fullSpan']);
-
-    logger.log('Attempting to fulfill request...');
-
-    randomlyInjectError();
-    const user = await getUser(GET_USER_NAME_SERVICE_URL, id);
-    const phrase = await getGreetingPhrase(GREETING_PHRASES_SERVICE_URL);
-    const message = phrase ? phrase.replace('{{NAME}}', user) : '';
-
-    await emitEvent(message);
-
-    span.end();
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify(message)
-    };
-  } catch (error: any) {
-    /**
-     * It's possible we haven't caught all errors.
-     * In that case, let's check for uncaught standard
-     * errors and log them out so they are visible for
-     * our tools.
-     */
-    if (error.name === 'Error') {
-      const logger = MikroLog.start({ event, context: awsContext });
-      logger.error(error.message);
-    }
-
-    /**
-     * Closes all traces at once. If we don't do this,
-     * we are going to have blanks in our trace history.
-     */
-    tracer.endAll();
-
-    return {
-      statusCode: 400,
-      body: JSON.stringify(error.message)
-    };
-  }
-}
 
 /**
  * @description Check for presence of required environment variables.
@@ -111,90 +32,115 @@ function checkRequiredEnvVars() {
 }
 
 /**
- * @description Use chance to calculate if we get an error or not.
+ * @description The `Greet` function is the entry point for the service.
+ *
+ * It integrates with another out-of-context AWS service (`User`) and with
+ * an external service (`GreetingPhrase`) hosted on Mockachino (`https://www.mockachino.com`).
  */
-function randomlyInjectError() {
-  const randomNumber = Math.floor(Math.random() * (100 + 1));
-  if (randomNumber > 80) throw new Error('Random error occurred!');
+export async function handler(
+  event: APIGatewayProxyEventV2,
+  context: Context
+): Promise<APIGatewayProxyResult> {
+  /////////////////
+  // START SETUP //
+  /////////////////
+  process.env.__CORRELATIONID__ = produceCorrelationId(event, context);
+
+  const logger = MikroLog.start({
+    metadataConfig,
+    event,
+    context,
+    correlationId: getCorrelationId()
+  }); // MikroLog will also make certain AWS context available in the environment; see below with correlation ID
+
+  const tracer = MikroTrace.start({
+    serviceName: metadataConfig?.service,
+    correlationId: getCorrelationId()
+  });
+  ///////////////
+  // END SETUP //
+  ///////////////
+
+  try {
+    return await handleSuccess({ logger, tracer, event, context });
+  } catch (error: any) {
+    return await handleError({ logger, tracer, error });
+  }
 }
 
 /**
- * @description Call `User` service (`GetUserName`) and get response.
+ * @description The intended, functional flow.
  */
-async function getUser(url: string, id: string) {
-  const tracer = MikroTrace.start();
-  const span = tracer.start(spanNames['userSpan']);
+async function handleSuccess(input: SuccessInput) {
+  /////////////////
+  // START SETUP //
+  /////////////////
+  const { tracer, logger, event } = input;
 
-  const { spanId, traceId } = span.getConfiguration();
+  checkRequiredEnvVars();
 
-  const userResponse = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'x-correlation-id': getCorrelationId(),
-      'x-trace-id': traceId,
-      'x-span-id': spanId
-    },
-    body: JSON.stringify({ id })
-  }).then((res: any) => {
-    span.end();
-    if (res.status >= 200 && res.status < 300) return res.json();
-    else throw new NetworkUserError();
-  });
+  const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+  if (!body || JSON.stringify(body) === '{}') throw new MissingRequestBodyError();
 
-  return userResponse;
-}
+  const id = body.id;
+  if (!id) throw new MissingIdError();
+  ///////////////
+  // END SETUP //
+  ///////////////
 
-/**
- * @description Call `GreetingPhrase` service and get response.
- */
-async function getGreetingPhrase(url: string) {
-  const tracer = MikroTrace.start();
-  const span = tracer.start(spanNames['apiSpan']);
-  const greetingPhraseResponse = await fetch(url).then((res: any) => {
-    if (res.status >= 200 && res.status < 300) return res.json();
-    else throw new NetworkGreetingError();
-  });
+  const span = tracer.start(spanNames['fullSpan']);
+  logger.log('Attempting to fulfill request...');
 
-  const { greetingPhrases } = greetingPhraseResponse;
-  const maximum = greetingPhrases.length - 1;
-  const randomNumber = Math.floor(Math.random() * (maximum + 1));
-  const phrase = greetingPhrases[randomNumber];
+  randomlyInjectError();
+
+  const user = await getUser(GET_USER_NAME_SERVICE_URL, id, spanNames['userSpan']);
+  const phrase = await getGreetingPhrase(GREETING_PHRASES_SERVICE_URL, spanNames['apiSpan']);
+  const message = phrase ? phrase.replace('{{NAME}}', user) : '';
+
+  await emitEvent(message, spanNames['emitSpan'], REGION, EVENT_BUS_NAME);
 
   span.end();
 
-  if (!phrase) throw new GreetingPhraseError(`${randomNumber}`);
-  return phrase;
-}
-
-/**
- * @description Emit an event using AWS EventBridge.
- */
-async function emitEvent(message: string) {
-  const tracer = MikroTrace.start();
-  const span = tracer.start(spanNames['emitSpan']);
-  const metadata = produceDynamicMetadata();
-  const { spanId, traceId } = span.getConfiguration();
-
-  const eventBridge = new EventBridgeClient({ region: REGION });
-
-  const command = {
-    EventBusName: EVENT_BUS_NAME,
-    Source: 'observabilitydemo.greet',
-    DetailType: 'Greet',
-    Detail: JSON.stringify({
-      metadata: {
-        ...metadata,
-        spanId,
-        traceId
-      },
-      data: message
-    })
+  return {
+    statusCode: 200,
+    body: JSON.stringify(message)
   };
-  const event = new PutEventsCommand({ Entries: [command] });
-
-  const result = await eventBridge.send(event);
-  span.end();
-
-  if (result['FailedEntryCount'] && result['FailedEntryCount'] > 0)
-    throw new FailureToEmitEventError();
 }
+
+/**
+ * @description In case something happens.
+ */
+async function handleError(input: ErrorInput) {
+  const { tracer, logger, error } = input;
+  /**
+   * It's possible we haven't caught all errors.
+   * In that case, let's check for uncaught standard
+   * errors and log them out so they are visible for
+   * our tools.
+   */
+  if (error.name === 'Error') logger.error(error.message);
+
+  /**
+   * Closes all traces at once. If we don't do this,
+   * we are going to have blanks in our trace history.
+   */
+  tracer.endAll();
+
+  return {
+    statusCode: 400,
+    body: JSON.stringify(error.message)
+  };
+}
+
+type SuccessInput = {
+  tracer: MikroTrace;
+  logger: MikroLog;
+  event: APIGatewayProxyEventV2;
+  context: Context;
+};
+
+type ErrorInput = {
+  tracer: MikroTrace;
+  logger: MikroLog;
+  error: any;
+};
