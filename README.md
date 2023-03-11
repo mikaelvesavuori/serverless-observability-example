@@ -25,7 +25,7 @@ It is assumed that:
 
 _Version 2.0 introduced support for Datadog. It won't quite be as a rich an experience as using Honeycomb but it will definitely be servicable._
 
-The instructions below relate broadly to either tool. When it comes to getting API keys as such, please refer to [Datadog's own instructions](https://docs.datadoghq.com/account_management/api-app-keys/).
+The instructions below relate broadly to either tool. When it comes to getting API keys and such, please refer to [Datadog's own instructions](https://docs.datadoghq.com/account_management/api-app-keys/).
 
 Make sure to check the respective `serverless.yml` files for the services and remove anything you don't want to use.
 
