@@ -3,4 +3,5 @@ node_modules/
 .serverless/
 .webpack/
 lib/
-serverless.custom.yml
+serverless.*.yml
+package-lock.json

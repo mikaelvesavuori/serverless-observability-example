@@ -162,3 +162,21 @@ functions:
       LIBHONEY_DATASET: ${self:custom.honeycomb.dataset}
       LIBHONEY_API_KEY: ${self:custom.honeycomb.apiKey}
       LOGS_API_DISABLE_PLATFORM_MSGS: true
+
+  GreetStart:
+    handler: src/infrastructure/adapters/web/GreetStart.handler
+    description: Greet a user (starting state)
+    events:
+      - httpApi:
+          method: POST
+          path: /greetStart
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - events:PutEvents
+        Resource: arn:aws:events:${aws:region}:${self:custom.config.awsAccountNumber}:event-bus/${self:custom.config.eventBusName}
+    environment:
+      REGION: ${aws:region}
+      EVENT_BUS_NAME: ${self:custom.config.eventBusName}
+      GREETING_PHRASES_SERVICE_URL: ${self:custom.config.greetingPhrasesServiceUrl}
+      GET_USER_NAME_SERVICE_URL: ${self:custom.config.getUserNameServiceUrl}
