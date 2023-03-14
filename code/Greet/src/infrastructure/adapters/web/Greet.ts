@@ -112,6 +112,8 @@ async function handleSuccess(input: SuccessInput) {
  */
 async function handleError(input: ErrorInput) {
   const { tracer, logger, error } = input;
+
+  const statusCode = error?.message === 'Random error occurred!' ? 500 : 400;
   /**
    * It's possible we haven't caught all errors.
    * In that case, let's check for uncaught standard
@@ -127,7 +129,7 @@ async function handleError(input: ErrorInput) {
   tracer.endAll();
 
   return {
-    statusCode: 400,
+    statusCode,
     body: JSON.stringify(error.message)
   };
 }
