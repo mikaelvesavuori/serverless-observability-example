@@ -1,4 +1,4 @@
-# Serverless Observability example: AWS and Honeycomb or Datadog
+# Serverless Observability example: AWS + Honeycomb or Datadog
 
 **This repo presents a complete project to demonstrate a "broken" observable serverless application.**
 
@@ -23,7 +23,7 @@ It is assumed that:
 
 ## Deployment
 
-_Version 2.0 introduced support for Datadog. It won't quite be as a rich an experience as using Honeycomb but it will definitely be servicable._
+_Version 2.0 introduced support for Datadog in addition to the existing Honeycomb support. It won't quite be as a rich an experience as using Honeycomb but it will definitely be servicable._
 
 The instructions below relate broadly to either tool. When it comes to getting API keys and such, please refer to [Datadog's own instructions](https://docs.datadoghq.com/account_management/api-app-keys/).
 
