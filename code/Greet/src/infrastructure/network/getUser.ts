@@ -11,15 +11,11 @@ export async function getUser(url: string, id: string, spanName: string) {
   const tracer = MikroTrace.continue();
   const span = tracer.start(spanName);
 
-  const { traceId, spanId } = span.getConfiguration();
-
   const userResponse = await fetch(url, {
     method: 'POST',
     headers: {
       'x-correlation-id': getCorrelationId(),
-      'x-trace-id': traceId,
-      'x-span-id': spanId,
-      'x-spanparent-id': spanId
+      traceparent: tracer.getTraceHeader(span.getConfiguration())
     },
     body: JSON.stringify({ id })
   }).then((res: any) => {

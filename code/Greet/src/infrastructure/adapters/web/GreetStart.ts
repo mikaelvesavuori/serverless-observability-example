@@ -25,6 +25,9 @@ function checkRequiredEnvVars() {
     throw new MissingEnvVarsError();
 }
 
+/**
+ * @description The Lambda handler function.
+ */
 export async function handler(event: any): Promise<any> {
   checkRequiredEnvVars();
 
@@ -50,6 +53,9 @@ export async function handler(event: any): Promise<any> {
   };
 }
 
+/**
+ * @description Get the user from the service.
+ */
 async function getUser(url: string, id: string) {
   const userResponse = await fetch(url, {
     method: 'POST',
@@ -62,6 +68,9 @@ async function getUser(url: string, id: string) {
   return userResponse;
 }
 
+/**
+ * @description Get our greeting phrases.
+ */
 async function getGreetingPhrase(url: string) {
   const greetingPhraseResponse = await fetch(url).then((res: any) => {
     if (res.status >= 200 && res.status < 300) return res.json();
@@ -77,6 +86,9 @@ async function getGreetingPhrase(url: string) {
   return phrase;
 }
 
+/**
+ * @description Emit event to EventBridge.
+ */
 async function emitEvent(message: string, region: string, eventBusName: string) {
   const eventBridge = new EventBridgeClient({ region });
 

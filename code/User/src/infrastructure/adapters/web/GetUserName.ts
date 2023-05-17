@@ -18,12 +18,15 @@ export async function handler(
   event: APIGatewayProxyEventV2,
   context: Context
 ): Promise<APIGatewayProxyResult> {
+  /////////////////
+  // START SETUP //
+  /////////////////
+  const logger = MikroLog.start({ metadataConfig, event, context });
+
   try {
-    /////////////////
-    // START SETUP //
-    /////////////////
-    const logger = MikroLog.start({ metadataConfig, event, context });
     logger.log('Getting user name...');
+    const traceparent = event.headers?.['traceparent'] || 'unknown';
+    logger.log(`traceparent is ${traceparent}`);
 
     const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
     if (!body || JSON.stringify(body) === '{}') throw new MissingRequestBodyError();
@@ -46,6 +49,8 @@ export async function handler(
       body: JSON.stringify(user)
     };
   } catch (error: any) {
+    logger.error(error.message);
+
     return {
       statusCode: 400,
       body: JSON.stringify(error.message)
